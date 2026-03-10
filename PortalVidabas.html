@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vidavas 360 - Portal Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+    <style>
+        .vidavas-blue { background-color: #004a99; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <!-- Header Corporativo -->
+    <header class="vidavas-blue text-white p-4 shadow-md sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                <h1 class="font-bold text-sm uppercase tracking-tighter">Vidavas Logística 360</h1>
+            </div>
+            <div class="flex items-center gap-1">
+                <div class="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                <span class="text-[9px] font-bold">CONECTADO</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 pt-6">
+
+        <!-- Vista 1: Identificación -->
+        <section id="view-auth" class="glass rounded-3xl p-8 shadow-xl border border-white">
+            <div class="mb-6 text-center">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="user-check" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-xl font-bold">Validación de Personal</h2>
+                <p class="text-xs text-slate-500 mt-1">Ingrese su DNI para acceder al catálogo.</p>
+            </div>
+            <div class="space-y-4">
+                <input type="number" id="dni" placeholder="00000000" 
+                    class="w-full bg-slate-100 border-none rounded-2xl px-6 py-4 text-center text-xl font-bold focus:ring-4 focus:ring-blue-500/10 outline-none">
+                <button onclick="auth()" class="w-full vidavas-blue text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
+                    Entrar al Buscador
+                </button>
+            </div>
+        </section>
+
+        <!-- Vista 2: Buscador -->
+        <section id="view-search" class="hidden space-y-4">
+            <div class="sticky top-20 z-40">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
+                    <input type="text" id="query" onkeyup="filter()" placeholder="¿Qué material necesita? (ej. Gasa...)" 
+                        class="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-4 shadow-md outline-none focus:ring-4 focus:ring-blue-500/10">
+                </div>
+            </div>
+            <div id="catalog" class="space-y-3 pb-24">
+                <!-- Se llena con JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Modal de Confirmación -->
+    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl">
+            <h3 class="text-lg font-bold text-center mb-6">¿Confirmar Requerimiento?</h3>
+            <div id="modal-info" class="bg-slate-50 p-4 rounded-2xl text-sm mb-8 text-center"></div>
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="flex-1 py-4 font-bold text-slate-400">Volver</button>
+                <button id="send-btn" onclick="sendToAutomate()" class="flex-1 vidavas-blue text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Éxito -->
+    <div id="view-success" class="hidden fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-8 text-center">
+        <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+            <i data-lucide="check" class="w-10 h-10"></i>
+        </div>
+        <h2 class="text-2xl font-bold">Solicitud Enviada</h2>
+        <p class="text-sm text-slate-500 mt-2 mb-10">Naomy ha recibido el acta en su correo. Ya puede acercarse al almacén.</p>
+        <button onclick="location.reload()" class="vidavas-blue text-white px-10 py-4 rounded-2xl font-bold">Nuevo Pedido</button>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- CONFIGURACIÓN DEL DIRECTOR ---
+        const FLOW_URL = "https://default633557f1c880405bbeffd08ff33aa9.2d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/069549ee11e747bfa7a6ecd6c18a4cad/triggers/manual/paths/invoke?api-version=1"; // PEGAR AQUÍ LA URL DEL TRIGGER HTTP DE POWER AUTOMATE
+        const CATALOGO = [
+            { sku: 'MED-101', nombre: 'GASA ESTÉRIL 10X10', cat: 'MATERIAL MÉDICO' },
+            { sku: 'MED-102', nombre: 'GUANTES QUIRÚRGICOS 7.5', cat: 'MATERIAL MÉDICO' },
+            { sku: 'CIR-505', nombre: 'VÁLVULA AHMED MODELO S2', cat: 'DISPOSITIVOS MÉDICOS' },
+            { sku: 'FAR-201', nombre: 'ALCOHOL EN GEL 1L', cat: 'LIMPIEZA' },
+            { sku: 'ADM-001', nombre: 'PAPEL BOND A4 75GR', cat: 'ADMINISTRACIÓN' }
+        ];
+
+        let userDni = "";
+        let selected = null;
+
+        function auth() {
+            const val = document.getElementById('dni').value;
+            if(val.length < 8) return alert("DNI Inválido");
+            userDni = val;
+            document.getElementById('view-auth').classList.add('hidden');
+            document.getElementById('view-search').classList.remove('hidden');
+            render(CATALOGO);
+        }
+
+        function render(items) {
+            const container = document.getElementById('catalog');
+            container.innerHTML = items.map(i => `
+                <div onclick="select('${i.sku}', '${i.nombre}')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between active:scale-95 transition-all">
+                    <div>
+                        <p class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">${i.cat}</p>
+                        <h3 class="font-bold text-slate-800 text-sm">${i.nombre}</h3>
+                        <p class="text-[10px] text-slate-400">SKU: ${i.sku}</p>
+                    </div>
+                    <i data-lucide="plus-circle" class="text-slate-200 w-6 h-6"></i>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function filter() {
+            const q = document.getElementById('query').value.toLowerCase();
+            render(CATALOGO.filter(i => i.nombre.toLowerCase().includes(q)));
+        }
+
+        function select(sku, nombre) {
+            selected = { sku, nombre };
+            document.getElementById('modal-info').innerHTML = `Solicitante: <b>${userDni}</b><br>Material: <b>${nombre}</b>`;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        async function sendToAutomate() {
+            if(!FLOW_URL) return alert("Director, debe pegar la URL del flujo en el código HTML.");
+            const btn = document.getElementById('send-btn');
+            btn.innerHTML = "Enviando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(FLOW_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dni: userDni, sku: selected.sku, material: selected.nombre })
+                });
+
+                if(res.ok) {
+                    document.getElementById('modal').classList.add('hidden');
+                    document.getElementById('view-success').classList.remove('hidden');
+                } else { alert("Error en el flujo. Revise Power Automate."); }
+            } catch (e) { alert("Error de conexión."); }
+            btn.innerHTML = "Enviar"; btn.disabled = false;
+        }
+    </script>
+</body>
+</html>
