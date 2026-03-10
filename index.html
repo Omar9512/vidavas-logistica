@@ -3,163 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vidavas 360 - Portal Pro</title>
+    <title>Vidavas Logística 360</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
     <style>
-        .vidavas-blue { background-color: #004a99; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .custom-gradient { background: linear-gradient(135deg, #004a99 0%, #0072ff 100%); }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .spinner { border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top: 3px solid #fff; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans">
 
-    <!-- Header Corporativo -->
-    <header class="vidavas-blue text-white p-4 shadow-md sticky top-0 z-50">
+    <!-- Header -->
+    <header class="custom-gradient text-white p-5 shadow-lg sticky top-0 z-50">
         <div class="max-w-md mx-auto flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
-                <h1 class="font-bold text-sm uppercase tracking-tighter">Vidavas Logística 360</h1>
+            <div class="flex items-center gap-3">
+                <i data-lucide="activity" class="w-6 h-6"></i>
+                <h1 class="font-black text-sm uppercase tracking-tighter">Vidavas 360</h1>
             </div>
-            <div class="flex items-center gap-1">
-                <div class="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                <span class="text-[9px] font-bold">CONECTADO</span>
+            <div class="flex items-center gap-1.5">
+                <span id="conn-dot" class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span class="text-[9px] font-bold uppercase">Sincronizado</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-md mx-auto p-4 pt-6">
-
-        <!-- Vista 1: Identificación -->
-        <section id="view-auth" class="glass rounded-3xl p-8 shadow-xl border border-white">
-            <div class="mb-6 text-center">
-                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i data-lucide="user-check" class="w-8 h-8"></i>
-                </div>
-                <h2 class="text-xl font-bold">Validación de Personal</h2>
-                <p class="text-xs text-slate-500 mt-1">Ingrese su DNI para acceder al catálogo.</p>
-            </div>
+    <main class="max-w-md mx-auto p-4">
+        
+        <!-- Vista 1: Ingreso -->
+        <section id="view-auth" class="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 mt-4 animate-in fade-in zoom-in duration-300">
+            <h2 class="text-2xl font-black text-slate-800 mb-6 text-center">Identificación</h2>
             <div class="space-y-4">
-                <input type="number" id="dni" placeholder="00000000" 
-                    class="w-full bg-slate-100 border-none rounded-2xl px-6 py-4 text-center text-xl font-bold focus:ring-4 focus:ring-blue-500/10 outline-none">
-                <button onclick="auth()" class="w-full vidavas-blue text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all">
-                    Entrar al Buscador
+                <div class="relative">
+                    <i data-lucide="user-check" class="absolute left-4 top-4 text-slate-400 w-5 h-5"></i>
+                    <input type="number" id="dni-input" placeholder="Ingrese su DNI" 
+                        class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold outline-none focus:ring-4 focus:ring-blue-500/10 transition-all">
+                </div>
+                <button id="btn-login" onclick="checkAccess()" class="w-full custom-gradient text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-all flex justify-center items-center">
+                    <span id="login-text">Ingresar</span>
                 </button>
             </div>
+            <p class="text-[10px] text-center text-slate-400 mt-6 uppercase font-bold tracking-widest">Control de Acceso Vidavas</p>
         </section>
 
         <!-- Vista 2: Buscador -->
-        <section id="view-search" class="hidden space-y-4">
-            <div class="sticky top-20 z-40">
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5"></i>
-                    <input type="text" id="query" onkeyup="filter()" placeholder="¿Qué material necesita? (ej. Gasa...)" 
-                        class="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-4 shadow-md outline-none focus:ring-4 focus:ring-blue-500/10">
-                </div>
+        <section id="view-search" class="hidden space-y-4 animate-in slide-in-from-bottom duration-500">
+            <div class="bg-white p-4 rounded-2xl shadow-sm flex items-center justify-between border border-slate-100">
+                <span id="user-info" class="text-[11px] font-bold text-slate-600"></span>
+                <button onclick="location.reload()" class="text-[10px] text-red-500 font-bold uppercase">Salir</button>
             </div>
-            <div id="catalog" class="space-y-3 pb-24">
-                <!-- Se llena con JS -->
+            <div class="relative sticky top-20 z-40">
+                <i data-lucide="search" class="absolute left-4 top-4 text-slate-400 w-5 h-5"></i>
+                <input type="text" id="search-input" onkeyup="filter()" placeholder="¿Qué material necesita?" 
+                    class="w-full bg-white border border-slate-200 rounded-2xl px-12 py-4 text-sm shadow-md outline-none">
             </div>
+            <div id="catalog" class="space-y-3 pb-24"></div>
+        </section>
+
+        <!-- Pantalla de Error (Caso Negativo) -->
+        <section id="view-error" class="hidden fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-8 text-center">
+            <div class="w-20 h-20 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <i data-lucide="alert-triangle" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 mb-2">Acceso Denegado</h2>
+            <p id="error-msg" class="text-slate-500 mb-10 italic">Su DNI no figura en la base de datos oficial de la clínica.</p>
+            <button onclick="location.reload()" class="bg-slate-900 text-white px-10 py-4 rounded-2xl font-bold active:scale-95 transition-all">Intentar de Nuevo</button>
+        </section>
+
+        <!-- Pantalla de Éxito -->
+        <section id="view-success" class="hidden fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-8 text-center">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                <i data-lucide="check" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-black text-slate-900 mb-2">Pedido Enviado</h2>
+            <p class="text-slate-500 mb-10 italic text-sm">Naomy ha recibido el acta automática. <br>Acérquese al almacén.</p>
+            <button onclick="location.reload()" class="custom-gradient text-white px-10 py-4 rounded-2xl font-bold active:scale-95 transition-all">Nuevo Requerimiento</button>
         </section>
 
     </main>
 
     <!-- Modal de Confirmación -->
-    <div id="modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
         <div class="bg-white rounded-[2.5rem] p-8 w-full max-w-sm shadow-2xl">
-            <h3 class="text-lg font-bold text-center mb-6">¿Confirmar Requerimiento?</h3>
-            <div id="modal-info" class="bg-slate-50 p-4 rounded-2xl text-sm mb-8 text-center"></div>
-            <div class="flex gap-2">
-                <button onclick="closeModal()" class="flex-1 py-4 font-bold text-slate-400">Volver</button>
-                <button id="send-btn" onclick="sendToAutomate()" class="flex-1 vidavas-blue text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100">Enviar</button>
+            <h3 class="text-xl font-black mb-6 text-center">¿Confirmar Pedido?</h3>
+            <div id="modal-details" class="bg-slate-50 p-5 rounded-2xl text-xs mb-8 text-center leading-relaxed"></div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeModal()" class="py-4 font-bold text-slate-400">Volver</button>
+                <button id="send-btn" onclick="send()" class="custom-gradient text-white py-4 rounded-2xl font-bold active:scale-95 transition-all flex justify-center items-center">
+                    <span id="send-text">Enviar</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Éxito -->
-    <div id="view-success" class="hidden fixed inset-0 bg-white z-[100] flex flex-col items-center justify-center p-8 text-center">
-        <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
-            <i data-lucide="check" class="w-10 h-10"></i>
-        </div>
-        <h2 class="text-2xl font-bold">Solicitud Enviada</h2>
-        <p class="text-sm text-slate-500 mt-2 mb-10">Naomy ha recibido el acta en su correo. Ya puede acercarse al almacén.</p>
-        <button onclick="location.reload()" class="vidavas-blue text-white px-10 py-4 rounded-2xl font-bold">Nuevo Pedido</button>
-    </div>
-
     <script>
-        lucide.createIcons();
+        // Función segura para crear iconos
+        function initIcons() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.warn("Lucide no cargó a tiempo, reintentando...");
+                setTimeout(initIcons, 500);
+            }
+        }
 
+        // Ejecutar al cargar la ventana
+        window.addEventListener('load', initIcons);
+        
         // --- CONFIGURACIÓN DEL DIRECTOR ---
-        const FLOW_URL = "https://default633557f1c880405bbeffd08ff33aa9.2d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/069549ee11e747bfa7a6ecd6c18a4cad/triggers/manual/paths/invoke?api-version=1"; // PEGAR AQUÍ LA URL DEL TRIGGER HTTP DE POWER AUTOMATE
+        // PEGUE AQUÍ SU URL DE POWER AUTOMATE
+        const FLOW_URL = "https://default633557f1c880405bbeffd08ff33aa9.2d.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/069549ee11e747bfa7a6ecd6c18a4cad/triggers/manual/paths/invoke?api-version=1"; 
+
         const CATALOGO = [
             { sku: 'MED-101', nombre: 'GASA ESTÉRIL 10X10', cat: 'MATERIAL MÉDICO' },
             { sku: 'MED-102', nombre: 'GUANTES QUIRÚRGICOS 7.5', cat: 'MATERIAL MÉDICO' },
             { sku: 'CIR-505', nombre: 'VÁLVULA AHMED MODELO S2', cat: 'DISPOSITIVOS MÉDICOS' },
-            { sku: 'FAR-201', nombre: 'ALCOHOL EN GEL 1L', cat: 'LIMPIEZA' },
+            { sku: 'FAR-201', nombre: 'ALCOHOL EN GEL 1L', cat: 'FARMACIA / LIMPIEZA' },
             { sku: 'ADM-001', nombre: 'PAPEL BOND A4 75GR', cat: 'ADMINISTRACIÓN' }
         ];
 
         let userDni = "";
-        let selected = null;
+        let selectedItem = null;
 
-        function auth() {
-            const val = document.getElementById('dni').value;
-            if(val.length < 8) return alert("DNI Inválido");
+        function checkAccess() {
+            const val = document.getElementById('dni-input').value;
+            if(!val || val.length < 8) {
+                alert("Ingrese un DNI válido de 8 dígitos.");
+                return;
+            }
             userDni = val;
-            document.getElementById('view-auth').classList.add('hidden');
-            document.getElementById('view-search').classList.remove('hidden');
-            render(CATALOGO);
+            
+            // Simular validación rápida
+            const loginBtn = document.getElementById('login-text');
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '<div class="spinner"></div>';
+            
+            setTimeout(() => {
+                document.getElementById('view-auth').classList.add('hidden');
+                document.getElementById('view-search').classList.remove('hidden');
+                document.getElementById('user-info').innerText = "Personal Validado: " + val;
+                render(CATALOGO);
+                loginBtn.innerHTML = originalText;
+            }, 600);
         }
 
         function render(items) {
             const container = document.getElementById('catalog');
             container.innerHTML = items.map(i => `
-                <div onclick="select('${i.sku}', '${i.nombre}')" class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between active:scale-95 transition-all">
+                <div onclick="select('${i.sku}', '${i.nombre}')" class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between active:scale-95 transition-all">
                     <div>
-                        <p class="text-[9px] font-bold text-blue-600 uppercase tracking-widest">${i.cat}</p>
-                        <h3 class="font-bold text-slate-800 text-sm">${i.nombre}</h3>
+                        <span class="text-[8px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-widest">${i.cat}</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-1">${i.nombre}</h3>
                         <p class="text-[10px] text-slate-400">SKU: ${i.sku}</p>
                     </div>
                     <i data-lucide="plus-circle" class="text-slate-200 w-6 h-6"></i>
                 </div>
             `).join('');
-            lucide.createIcons();
+            
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function filter() {
-            const q = document.getElementById('query').value.toLowerCase();
+            const q = document.getElementById('search-input').value.toLowerCase();
             render(CATALOGO.filter(i => i.nombre.toLowerCase().includes(q)));
         }
 
         function select(sku, nombre) {
-            selected = { sku, nombre };
-            document.getElementById('modal-info').innerHTML = `Solicitante: <b>${userDni}</b><br>Material: <b>${nombre}</b>`;
-            document.getElementById('modal').classList.remove('hidden');
+            selectedItem = { sku, nombre };
+            document.getElementById('modal-details').innerHTML = `<b>SOLICITANTE:</b> ${userDni}<br><b>MATERIAL:</b> ${nombre}<br><br><small>Al confirmar, Naomy recibirá el acta oficial en su correo.</small>`;
+            document.getElementById('confirm-modal').classList.remove('hidden');
         }
 
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+        function closeModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
 
-        async function sendToAutomate() {
-            if(!FLOW_URL) return alert("Director, debe pegar la URL del flujo en el código HTML.");
-            const btn = document.getElementById('send-btn');
-            btn.innerHTML = "Enviando...";
-            btn.disabled = true;
+        async function send() {
+            if(!FLOW_URL) return alert("ERROR: Director, pegue la URL del flujo en el script.");
+            
+            const btnText = document.getElementById('send-text');
+            const originalText = btnText.innerHTML;
+            btnText.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('send-btn').disabled = true;
 
             try {
-                const res = await fetch(FLOW_URL, {
+                const response = await fetch(FLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dni: userDni, sku: selected.sku, material: selected.nombre })
+                    body: JSON.stringify({
+                        dni: userDni,
+                        sku: selectedItem.sku,
+                        material: selectedItem.nombre
+                    })
                 });
 
-                if(res.ok) {
-                    document.getElementById('modal').classList.add('hidden');
+                console.log("Estado de Respuesta:", response.status);
+
+                if(response.status === 401) {
+                    document.getElementById('confirm-modal').classList.add('hidden');
+                    document.getElementById('view-error').classList.remove('hidden');
+                } else if(response.ok) {
+                    document.getElementById('confirm-modal').classList.add('hidden');
                     document.getElementById('view-success').classList.remove('hidden');
-                } else { alert("Error en el flujo. Revise Power Automate."); }
-            } catch (e) { alert("Error de conexión."); }
-            btn.innerHTML = "Enviar"; btn.disabled = false;
+                } else {
+                    alert("Error en el servidor Vidavas (Código: " + response.status + ")");
+                }
+            } catch (error) {
+                console.error("Error de Red:", error);
+                alert("Error de conexión. Verifique que la URL del flujo sea correcta.");
+            } finally {
+                btnText.innerHTML = originalText;
+                document.getElementById('send-btn').disabled = false;
+            }
         }
     </script>
 </body>
 </html>
-
